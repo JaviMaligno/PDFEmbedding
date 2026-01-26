@@ -11,6 +11,7 @@ from app.config import settings
 from app.database import get_db
 from app.models import Job, JobStatus, Document, DocumentStatus
 from app.schemas import UploadResponse
+from app.workers.tasks import process_document
 
 router = APIRouter()
 
@@ -24,6 +25,8 @@ async def process_upload(
     job = Job(total_files=len(files), status=JobStatus.PENDING)
     db.add(job)
     await db.flush()
+
+    document_ids = []
 
     # Process each file
     for file in files:
@@ -45,11 +48,16 @@ async def process_upload(
             status=DocumentStatus.PENDING,
         )
         db.add(document)
+        await db.flush()
+        document_ids.append(str(document.id))
 
+    # Update job status
+    job.status = JobStatus.PROCESSING
     await db.commit()
-    await db.refresh(job)
 
-    # TODO: Enqueue Celery task here
+    # Enqueue processing tasks
+    for doc_id in document_ids:
+        process_document.delay(doc_id)
 
     return {
         "job_id": str(job.id),
