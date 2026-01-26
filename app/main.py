@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from app.api.routes import upload
+from app.api.routes import upload, jobs
 
 app = FastAPI(
     title="PDF Embedding Service",
@@ -12,6 +12,7 @@ app = FastAPI(
 
 # Include routers
 app.include_router(upload.router, tags=["upload"])
+app.include_router(jobs.router, tags=["jobs"])
 
 
 @app.get("/health")
