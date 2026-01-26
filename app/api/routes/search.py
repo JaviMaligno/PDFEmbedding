@@ -7,22 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.schemas import SearchRequest, SearchResponse, SearchResult, SearchResultMetadata
+from app.services.search_service import hybrid_search
 
 router = APIRouter()
-
-
-async def execute_search(query: str, limit: int, threshold: float, db: AsyncSession) -> dict:
-    """
-    Execute hybrid search (BM25 + vector).
-
-    This is a placeholder that will be implemented in the search service.
-    """
-    # TODO: Implement actual search in services/search_service.py
-    return {
-        "query": query,
-        "results": [],
-        "total": 0,
-    }
 
 
 @router.post("/search", response_model=SearchResponse)
@@ -35,10 +22,15 @@ async def search_documents(
 
     Combines BM25 keyword matching with vector similarity.
     """
-    result = await execute_search(request.query, request.limit, request.threshold, db)
+    results = await hybrid_search(
+        query=request.query,
+        db=db,
+        limit=request.limit,
+        threshold=request.threshold,
+    )
 
     return SearchResponse(
-        query=result["query"],
+        query=request.query,
         results=[
             SearchResult(
                 document_id=uuid.UUID(r["document_id"]),
@@ -47,7 +39,7 @@ async def search_documents(
                 snippet=r["snippet"],
                 metadata=SearchResultMetadata(**r["metadata"]),
             )
-            for r in result["results"]
+            for r in results
         ],
-        total=result["total"],
+        total=len(results),
     )

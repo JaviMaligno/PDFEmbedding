@@ -34,10 +34,28 @@ async def test_hybrid_search_returns_results():
         mock_embed.return_value = [0.1] * 1536
 
         with patch("app.services.search_service._vector_search", new_callable=AsyncMock) as mock_vector:
-            mock_vector.return_value = [{"chunk_id": "a", "score": 0.9}]
+            mock_vector.return_value = [
+                {
+                    "chunk_id": "a",
+                    "document_id": "doc-123",
+                    "content": "Test content",
+                    "page_number": 1,
+                    "filename": "test.pdf",
+                    "score": 0.9,
+                }
+            ]
 
             with patch("app.services.search_service._bm25_search", new_callable=AsyncMock) as mock_bm25:
-                mock_bm25.return_value = [{"chunk_id": "a", "score": 5.0}]
+                mock_bm25.return_value = [
+                    {
+                        "chunk_id": "a",
+                        "document_id": "doc-123",
+                        "content": "Test content",
+                        "page_number": 1,
+                        "filename": "test.pdf",
+                        "score": 5.0,
+                    }
+                ]
 
                 # Mock database session
                 mock_db = AsyncMock()
@@ -45,3 +63,7 @@ async def test_hybrid_search_returns_results():
                 results = await hybrid_search("test query", mock_db, limit=10)
 
     assert len(results) >= 1
+    assert results[0]["chunk_id"] == "a"
+    assert results[0]["document_id"] == "doc-123"
+    assert "snippet" in results[0]
+    assert "metadata" in results[0]
