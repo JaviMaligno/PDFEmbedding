@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Bash(mkdir:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Skill(superpowers:using-git-worktrees)",
+      "Bash(git worktree:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(cat:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(source .venv/Scripts/activate)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Skill(superpowers:finishing-a-development-branch)",
+      "Bash(alembic upgrade:*)",
+      "Bash(git branch:*)",
+      "Bash(git merge:*)",
+      "Bash(docker-compose exec:*)",
+      "Bash(alembic downgrade:*)",
+      "Bash(alembic current:*)",
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(netstat:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker rm:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(curl:*)",
+      "Bash(docker logs:*)"
+    ]
+  }
+}
