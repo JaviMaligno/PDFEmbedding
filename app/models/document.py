@@ -36,7 +36,8 @@ class Document(Base):
     file_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[DocumentStatus] = mapped_column(
-        Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False
+        Enum(DocumentStatus, values_callable=lambda obj: [e.value for e in obj], name="documentstatus"),
+        default=DocumentStatus.PENDING, nullable=False
     )
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     file_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)

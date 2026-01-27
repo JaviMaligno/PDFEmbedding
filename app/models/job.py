@@ -30,7 +30,8 @@ class Job(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     status: Mapped[JobStatus] = mapped_column(
-        Enum(JobStatus), default=JobStatus.PENDING, nullable=False
+        Enum(JobStatus, values_callable=lambda obj: [e.value for e in obj], name="jobstatus"),
+        default=JobStatus.PENDING, nullable=False
     )
     total_files: Mapped[int] = mapped_column(Integer, default=0)
     processed_files: Mapped[int] = mapped_column(Integer, default=0)
