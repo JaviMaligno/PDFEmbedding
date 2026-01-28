@@ -2,7 +2,7 @@
 
 import uuid
 from celery import chain
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.workers.celery_app import celery_app
@@ -177,10 +177,19 @@ def finalize_document(self, embedding_result: dict, document_id: str):
         job = db.execute(select(Job).where(Job.id == doc.job_id)).scalar_one()
         job.processed_files += 1
 
-        # Check if all documents are processed
-        all_docs = db.execute(select(Document).where(Document.job_id == job.id)).scalars().all()
-        completed = sum(1 for d in all_docs if d.status == DocumentStatus.COMPLETED)
-        failed = sum(1 for d in all_docs if d.status == DocumentStatus.FAILED)
+        # Check if all documents are processed (use COUNT instead of fetching all rows)
+        completed = db.execute(
+            select(func.count()).select_from(Document).where(
+                Document.job_id == job.id,
+                Document.status == DocumentStatus.COMPLETED
+            )
+        ).scalar()
+        failed = db.execute(
+            select(func.count()).select_from(Document).where(
+                Document.job_id == job.id,
+                Document.status == DocumentStatus.FAILED
+            )
+        ).scalar()
 
         if completed + failed == job.total_files:
             if failed == 0:
