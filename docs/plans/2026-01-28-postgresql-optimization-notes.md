@@ -4,7 +4,7 @@ Observaciones basadas en el artículo de OpenAI sobre escalado de PostgreSQL.
 
 **Fuente:** [Scaling PostgreSQL at OpenAI](https://openai.com/index/scaling-postgresql/)
 
-**Estado:** Parcialmente implementado (ver sección 4)
+**Estado:** Completamente implementado
 
 ---
 
@@ -116,24 +116,12 @@ failed = db.execute(
 
 **Commit:** `35f5e5c`
 
-### 2.3 Consolidar commits (pendiente)
+### 2.3 Consolidar commits ✅ IMPLEMENTADO
 
 **Ubicación:** `app/workers/tasks.py:finalize_document()`
 
 ```python
-# Actual - 2 commits separados
-doc.status = DocumentStatus.COMPLETED
-db.commit()  # Commit 1
-
-job.processed_files += 1
-# ...
-db.commit()  # Commit 2
-```
-
-**Mejora propuesta:** Consolidar en una transacción
-
-```python
-# Optimizado - 1 commit
+# Implementado - 1 solo commit al final
 doc.status = DocumentStatus.COMPLETED
 job.processed_files += 1
 # ... actualizar job.status ...
@@ -163,7 +151,7 @@ db.commit()  # Solo 1 commit
 | COUNT en DB | ✅ Implementado | `35f5e5c` |
 | Índice `chunks.document_id` | ✅ Implementado | migración `002` |
 | Índice `documents.job_id` | ✅ Implementado | migración `003` |
-| Consolidar commits | ⏳ Pendiente (bajo impacto) | - |
+| Consolidar commits | ✅ Implementado | `11d9eb6` |
 
 ---
 

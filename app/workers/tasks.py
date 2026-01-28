@@ -171,9 +171,8 @@ def finalize_document(self, embedding_result: dict, document_id: str):
 
         # Update document status
         doc.status = DocumentStatus.COMPLETED
-        db.commit()
 
-        # Update job status
+        # Update job status (single transaction with document update)
         job = db.execute(select(Job).where(Job.id == doc.job_id)).scalar_one()
         job.processed_files += 1
 
