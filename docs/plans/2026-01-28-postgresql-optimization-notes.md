@@ -42,7 +42,7 @@ CREATE INDEX ix_documents_file_hash ON documents(file_hash);
 CREATE INDEX ix_chunks_document_id ON chunks(document_id);  -- ✅ IMPLEMENTADO (migración 002)
 
 -- Acelera consultas de estado de job
-CREATE INDEX ix_documents_job_id ON documents(job_id);  -- pendiente
+CREATE INDEX ix_documents_job_id ON documents(job_id);  -- ✅ IMPLEMENTADO (migración 003)
 ```
 
 **Impacto esperado:** Medio. Evita sequential scans en tablas chunks/documents cuando crecen.
@@ -162,7 +162,7 @@ db.commit()  # Solo 1 commit
 | Bulk insert | ✅ Implementado | `8521b7d` |
 | COUNT en DB | ✅ Implementado | `35f5e5c` |
 | Índice `chunks.document_id` | ✅ Implementado | migración `002` |
-| Índice `documents.job_id` | ⏳ Pendiente | - |
+| Índice `documents.job_id` | ✅ Implementado | migración `003` |
 | Consolidar commits | ⏳ Pendiente (bajo impacto) | - |
 
 ---
