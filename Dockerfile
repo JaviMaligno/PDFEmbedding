@@ -14,6 +14,10 @@ RUN pip install --no-cache-dir .
 # Copy application code
 COPY app/ app/
 
+# Copy migrations
+COPY alembic.ini .
+COPY migrations/ migrations/
+
 # Create storage directory
 RUN mkdir -p /data/pdfs
 
