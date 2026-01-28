@@ -4,7 +4,7 @@ Observaciones basadas en el artículo de OpenAI sobre escalado de PostgreSQL.
 
 **Fuente:** [Scaling PostgreSQL at OpenAI](https://openai.com/index/scaling-postgresql/)
 
-**Estado:** Notas de referencia (no implementado)
+**Estado:** Parcialmente implementado (ver sección 4)
 
 ---
 
@@ -35,14 +35,14 @@ CREATE INDEX chunks_content_fts_idx ON chunks USING gin (to_tsvector('english', 
 CREATE INDEX ix_documents_file_hash ON documents(file_hash);
 ```
 
-### 1.2 Índices faltantes (recomendados)
+### 1.2 Índices adicionales
 
 ```sql
 -- Acelera JOIN en búsquedas híbridas (vector + BM25)
-CREATE INDEX ix_chunks_document_id ON chunks(document_id);
+CREATE INDEX ix_chunks_document_id ON chunks(document_id);  -- ✅ IMPLEMENTADO (migración 002)
 
 -- Acelera consultas de estado de job
-CREATE INDEX ix_documents_job_id ON documents(job_id);
+CREATE INDEX ix_documents_job_id ON documents(job_id);  -- pendiente
 ```
 
 **Impacto esperado:** Medio. Evita sequential scans en tablas chunks/documents cuando crecen.
@@ -67,21 +67,12 @@ Buscar en el output:
 
 ## 2. Lazy Writes
 
-### 2.1 Problema actual: inserts uno por uno
+### 2.1 Bulk insert ✅ IMPLEMENTADO
 
-**Ubicación:** `app/workers/tasks.py:finalize_document()` líneas 159-168
-
-```python
-# Actual - N queries de INSERT
-for i, (chunk_data, embedding) in enumerate(zip(chunks_data, embeddings)):
-    chunk = Chunk(...)
-    db.add(chunk)
-```
-
-**Mejora:** Bulk insert
+**Ubicación:** `app/workers/tasks.py:finalize_document()`
 
 ```python
-# Optimizado - 1 query de INSERT
+# Implementado - 1 query de INSERT con db.add_all()
 chunks = [
     Chunk(
         document_id=doc.id,
@@ -98,21 +89,14 @@ db.add_all(chunks)
 
 **Impacto:** Alto para documentos con muchos chunks. Reduce N round-trips a 1.
 
-### 2.2 Problema actual: traer filas completas para contar
+**Commit:** `8521b7d`
 
-**Ubicación:** `app/workers/tasks.py:finalize_document()` líneas 179-181
+### 2.2 COUNT en base de datos ✅ IMPLEMENTADO
 
-```python
-# Actual - trae todas las filas a memoria
-all_docs = db.execute(select(Document).where(Document.job_id == job.id)).scalars().all()
-completed = sum(1 for d in all_docs if d.status == DocumentStatus.COMPLETED)
-failed = sum(1 for d in all_docs if d.status == DocumentStatus.FAILED)
-```
-
-**Mejora:** Usar COUNT en la base de datos
+**Ubicación:** `app/workers/tasks.py:finalize_document()`
 
 ```python
-# Optimizado - solo trae números
+# Implementado - COUNT en DB en lugar de traer filas
 from sqlalchemy import func
 
 completed = db.execute(
@@ -130,9 +114,11 @@ failed = db.execute(
 
 **Impacto:** Bajo-medio. Relevante cuando un job tiene muchos documentos.
 
-### 2.3 Problema actual: múltiples commits
+**Commit:** `35f5e5c`
 
-**Ubicación:** `app/workers/tasks.py:finalize_document()` líneas 172 y 191
+### 2.3 Consolidar commits (pendiente)
+
+**Ubicación:** `app/workers/tasks.py:finalize_document()`
 
 ```python
 # Actual - 2 commits separados
@@ -144,7 +130,7 @@ job.processed_files += 1
 db.commit()  # Commit 2
 ```
 
-**Mejora:** Consolidar en una transacción
+**Mejora propuesta:** Consolidar en una transacción
 
 ```python
 # Optimizado - 1 commit
@@ -169,14 +155,15 @@ db.commit()  # Solo 1 commit
 
 ---
 
-## 4. Orden de implementación sugerido
+## 4. Estado de implementación
 
-Si se decide implementar estas optimizaciones:
-
-1. **Bulk insert** - Mayor impacto, cambio simple
-2. **Índice chunks.document_id** - Una migración, beneficio inmediato en búsquedas
-3. **COUNT vs fetch all** - Cambio simple, beneficio moderado
-4. **Consolidar commits** - Opcional, beneficio menor
+| Optimización | Estado | Commit/Migración |
+|--------------|--------|------------------|
+| Bulk insert | ✅ Implementado | `8521b7d` |
+| COUNT en DB | ✅ Implementado | `35f5e5c` |
+| Índice `chunks.document_id` | ✅ Implementado | migración `002` |
+| Índice `documents.job_id` | ⏳ Pendiente | - |
+| Consolidar commits | ⏳ Pendiente (bajo impacto) | - |
 
 ---
 
