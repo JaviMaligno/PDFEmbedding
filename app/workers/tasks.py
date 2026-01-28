@@ -155,9 +155,9 @@ def finalize_document(self, embedding_result: dict, document_id: str):
         chunks_data = embedding_result["chunks"]
         embeddings = embedding_result["embeddings"]
 
-        # Create chunk records
-        for i, (chunk_data, embedding) in enumerate(zip(chunks_data, embeddings)):
-            chunk = Chunk(
+        # Create chunk records (bulk insert for efficiency)
+        chunks = [
+            Chunk(
                 document_id=doc.id,
                 chunk_index=chunk_data["chunk_index"],
                 page_number=None,  # TODO: Calculate from page boundaries
@@ -165,7 +165,9 @@ def finalize_document(self, embedding_result: dict, document_id: str):
                 token_count=chunk_data["token_count"],
                 embedding=embedding,
             )
-            db.add(chunk)
+            for chunk_data, embedding in zip(chunks_data, embeddings)
+        ]
+        db.add_all(chunks)
 
         # Update document status
         doc.status = DocumentStatus.COMPLETED
