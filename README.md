@@ -70,6 +70,21 @@ See [docs/plans/2026-01-26-pdf-embedding-service-design.md](docs/plans/2026-01-2
 
 ## Development
 
+### Reproducible security environment
+
+The committed `uv.lock` is newly resolved from this repository's manifest, rather
+than copied from an existing local checkout. It is intentionally tracked now;
+refresh it with uv 0.13.5 and review the dependency diff before committing.
+
+The container uses Python 3.11.17 and uv 0.13.5 with `uv sync --frozen --no-dev`.
+It copies `app/` before building the local wheel, and does not execute bundled pip.
+For an isolated local setup, run `uv sync --frozen` with Python 3.11.17. Installing
+dependencies does not require provider keys; starting services and migrations do.
+
+The locked security cohort retains FastAPI 0.136.3 / Starlette 1.3.1 and the
+PyMuPDF 1.x API. Resolver and wheel checks establish packaging and dependency
+consistency, not database, OCR-provider or deployed-service correctness.
+
 ### Running Tests
 
 ```bash
