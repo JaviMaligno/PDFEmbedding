@@ -70,6 +70,36 @@ See [docs/plans/2026-01-26-pdf-embedding-service-design.md](docs/plans/2026-01-2
 
 ## Development
 
+### Reproducible security environment
+
+The committed `uv.lock` is newly resolved from this repository's manifest, rather
+than copied from an existing local checkout. It is intentionally tracked now;
+refresh it with uv 0.13.5 and review the dependency diff before committing.
+
+The container uses Python 3.11.17 and uv 0.13.5 with `uv sync --frozen --no-dev`.
+It copies `app/` before building the local wheel, and does not execute bundled pip.
+For an isolated local setup, run `uv sync --frozen` with Python 3.11.17. Installing
+dependencies does not require provider keys; starting services and migrations do.
+
+The locked security cohort retains FastAPI 0.136.3 / Starlette 1.3.1 and the
+PyMuPDF 1.x API. SQLAlchemy includes its `asyncio` extra so current 2.x releases
+install greenlet before importing the asynchronous routes. Resolver and wheel checks establish packaging and dependency
+consistency, not database, OCR-provider or deployed-service correctness.
+
+The four offline compatibility contracts can be reproduced with
+`uv sync --frozen --extra dev` followed by
+`.venv/bin/python tests/security_compatibility.py` (on Windows, use
+`.venv/Scripts/python.exe`). They use real FastAPI routing, multipart validation
+and a generated PDF/Pillow fixture, with database, worker and provider boundaries
+replaced before application import. External connections fail closed; Windows
+asyncio's own loopback wake-up socket pair is the only socket exception.
+
+PR CI installs the frozen graph and compiles source in draft. On Ready, runtime
+changes additionally run these four contracts and build the Linux Docker image
+without starting it, running migrations or invoking providers. Documentation-only
+PRs retain the required check without the image build. A passing image build is
+packaging evidence; it does not establish database or deployed-service behavior.
+
 ### Running Tests
 
 ```bash
