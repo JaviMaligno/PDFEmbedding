@@ -82,7 +82,8 @@ For an isolated local setup, run `uv sync --frozen` with Python 3.11.17. Install
 dependencies does not require provider keys; starting services and migrations do.
 
 The locked security cohort retains FastAPI 0.136.3 / Starlette 1.3.1 and the
-PyMuPDF 1.x API. Resolver and wheel checks establish packaging and dependency
+PyMuPDF 1.x API. SQLAlchemy includes its `asyncio` extra so current 2.x releases
+install greenlet before importing the asynchronous routes. Resolver and wheel checks establish packaging and dependency
 consistency, not database, OCR-provider or deployed-service correctness.
 
 ### Running Tests
