@@ -1,0 +1,44 @@
+name: Source checks
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions:
+  contents: read
+concurrency:
+  group: pdf-source-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      UV_PYTHON_DOWNLOADS: never
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect runtime paths without skipping the required check
+        id: paths
+        shell: bash
+        run: |
+          if git diff --quiet '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}' -- app tests migrations pyproject.toml uv.lock Dockerfile .dockerignore alembic.ini .python-version .github/workflows/source-checks.yml; then
+            echo 'runtime=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'runtime=true' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.17'
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          version: '0.13.5'
+      - name: Install the frozen graph without provider configuration
+        run: uv sync --frozen --extra dev
+      - name: Compile source without importing the application
+        run: .venv/bin/python -m compileall -q app tests/security_compatibility.py
+      - name: Offline compatibility contracts
+        if: github.event.pull_request.draft == false && steps.paths.outputs.runtime == 'true'
+        run: .venv/bin/python tests/security_compatibility.py
+      - name: Build Linux image without starting the application
+        if: github.event.pull_request.draft == false && steps.paths.outputs.runtime == 'true'
+        run: docker build --tag pdf-security-compat .

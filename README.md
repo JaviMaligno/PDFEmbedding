@@ -86,6 +86,20 @@ PyMuPDF 1.x API. SQLAlchemy includes its `asyncio` extra so current 2.x releases
 install greenlet before importing the asynchronous routes. Resolver and wheel checks establish packaging and dependency
 consistency, not database, OCR-provider or deployed-service correctness.
 
+The four offline compatibility contracts can be reproduced with
+`uv sync --frozen --extra dev` followed by
+`.venv/bin/python tests/security_compatibility.py` (on Windows, use
+`.venv/Scripts/python.exe`). They use real FastAPI routing, multipart validation
+and a generated PDF/Pillow fixture, with database, worker and provider boundaries
+replaced before application import. External connections fail closed; Windows
+asyncio's own loopback wake-up socket pair is the only socket exception.
+
+PR CI installs the frozen graph and compiles source in draft. On Ready, runtime
+changes additionally run these four contracts and build the Linux Docker image
+without starting it, running migrations or invoking providers. Documentation-only
+PRs retain the required check without the image build. A passing image build is
+packaging evidence; it does not establish database or deployed-service behavior.
+
 ### Running Tests
 
 ```bash
